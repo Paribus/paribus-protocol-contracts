@@ -1,0 +1,12 @@
+#!/usr/bin/bash
+
+set -eo pipefail
+
+readonly SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
+readonly PROJ_ROOT="${SCRIPT_DIR}/.."
+cd "${PROJ_ROOT}" || exit 1
+
+readonly FILTERS='linebreak-style|Syntax error: unexpected token a|should be immediately followed by a comma, then an optional space|arg-overflow|blank-lines|mixedcase|function-order|uppercase|no-empty-blocks|lbrace'
+
+npx solium -d "${PROJ_ROOT}/contracts" | grep -Ev "${FILTERS}" >&2
+printf "Filtered %s" ""${FILTERS}""
