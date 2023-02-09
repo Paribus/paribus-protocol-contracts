@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.5.17;
+pragma solidity 0.5.17;
 
-import "../Comptroller/ComptrollerInterface.sol";
+import "../Comptroller/ComptrollerInterfaces.sol";
 import "../InterestRateModels/InterestRateModelInterface.sol";
 import "../Interfaces/EIP20NonStandardInterface.sol";
 
@@ -144,27 +144,27 @@ contract PTokenInterface is PTokenStorage {
     /**
      * @notice Event emitted when tokens are minted
      */
-    event Mint(address minter, uint mintAmount, uint mintTokens);
+    event Mint(address indexed minter, uint mintAmount, uint mintTokens);
 
     /**
      * @notice Event emitted when tokens are redeemed
      */
-    event Redeem(address redeemer, uint redeemAmount, uint redeemTokens);
+    event Redeem(address indexed redeemer, uint redeemAmount, uint redeemTokens);
 
     /**
      * @notice Event emitted when underlying is borrowed
      */
-    event Borrow(address borrower, uint borrowAmount, uint accountBorrows, uint totalBorrows);
+    event Borrow(address indexed borrower, uint borrowAmount, uint accountBorrows, uint totalBorrows);
 
     /**
      * @notice Event emitted when a borrow is repaid
      */
-    event RepayBorrow(address payer, address borrower, uint repayAmount, uint accountBorrows, uint totalBorrows);
+    event RepayBorrow(address indexed payer, address indexed borrower, uint repayAmount, uint accountBorrows, uint totalBorrows);
 
     /**
      * @notice Event emitted when a borrow is liquidated
      */
-    event LiquidateBorrow(address liquidator, address borrower, uint repayAmount, address pTokenCollateral, uint seizeTokens);
+    event LiquidateBorrow(address indexed liquidator, address indexed borrower, uint repayAmount, address indexed pTokenCollateral, uint seizeTokens);
 
     /*** Admin Events ***/
 
@@ -196,12 +196,12 @@ contract PTokenInterface is PTokenStorage {
     /**
      * @notice Event emitted when the reserves are added
      */
-    event ReservesAdded(address benefactor, uint addAmount, uint newTotalReserves);
+    event ReservesAdded(address indexed benefactor, uint addAmount, uint newTotalReserves);
 
     /**
      * @notice Event emitted when the reserves are reduced
      */
-    event ReservesReduced(address admin, uint reduceAmount, uint newTotalReserves);
+    event ReservesReduced(address indexed admin, uint reduceAmount, uint newTotalReserves);
 
     /**
      * @notice EIP20 Transfer event
@@ -236,7 +236,7 @@ contract PTokenInterface is PTokenStorage {
     function exchangeRateCurrent() public returns (uint);
     function exchangeRateStored() public view returns (uint);
     function getCash() external view returns (uint);
-    function getRealBorrowIndex() public view returns (uint);
+    function getRealBorrowIndex() external view returns (uint);
     function accrueInterest() public returns (uint);
     function seize(address liquidator, address borrower, uint seizeTokens) external returns (uint);
 
@@ -302,10 +302,10 @@ contract PTokenDelegateInterface is PTokenInterface, PTokenDelegationStorage {
      * @dev Should revert if any issues arise which make it unfit for delegation
      * @param data The encoded bytes data for any initialization
      */
-    function _becomeImplementation(bytes memory data) public;
+    function _becomeImplementation(bytes calldata data) external;
 
     /**
      * @notice Called by the delegator on a delegate to forfeit its responsibility
      */
-    function _resignImplementation() public;
+    function _resignImplementation() external;
 }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.5.17;
+pragma solidity 0.5.17;
 
 import "../PToken/PToken.sol";
 import "../PriceOracle/PriceOracleInterface.sol";
@@ -82,10 +82,10 @@ contract ComptrollerStorage is UnitrollerAdminStorage {
      *  Liquidation / seizing / transfer can only be paused globally, not by market.
      */
     address public pauseGuardian;
-    bool public _mintGuardianPaused;
-    bool public _borrowGuardianPaused;
-    bool public transferGuardianPaused;
-    bool public seizeGuardianPaused;
+    bool public mintGuardianPausedGlobal;
+    bool public borrowGuardianPausedGlobal;
+    bool public transferGuardianPausedGlobal;
+    bool public seizeGuardianPausedGlobal;
     mapping(address => bool) public mintGuardianPaused;
     mapping(address => bool) public borrowGuardianPaused;
 

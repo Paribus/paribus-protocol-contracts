@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.5.17;
+pragma solidity 0.5.17;
 
-import "../Comptroller/ComptrollerInterface.sol";
+import "../Comptroller/ComptrollerInterfaces.sol";
 import "../PToken/PTokenInterfaces.sol";
 import "../ErrorReporter.sol";
 import "../Utils/ExponentialNoError.sol";
@@ -317,7 +317,7 @@ contract PToken is PTokenInterface, ExponentialNoError, TokenErrorReporter {
     /*
     * @notice Get live borrow index, including interest rates
     */
-    function getRealBorrowIndex() public view returns (uint) {
+    function getRealBorrowIndex() external view returns (uint) {
         uint currentBlockNumber = getBlockNumber();
         uint accrualBlockNumberPrior = accrualBlockNumber;
 
@@ -488,8 +488,8 @@ contract PToken is PTokenInterface, ExponentialNoError, TokenErrorReporter {
 
             // permanently lock the first MINIMUM_LIQUIDITY tokens
             accountTokens[address(0)] = MINIMUM_LIQUIDITY;
-            // dont emit the Mint event in this case
-            emit Transfer(address(0), address(0), MINIMUM_LIQUIDITY);
+
+            // we dont emit any Transfer, Mint events for that
         }
 
         vars.accountTokensNew = add_(accountTokens[minter], vars.mintTokens);
@@ -560,6 +560,11 @@ contract PToken is PTokenInterface, ExponentialNoError, TokenErrorReporter {
     function redeemFresh(address payable redeemer, uint redeemTokensIn, uint redeemAmountIn) internal returns (uint) {
         require(redeemTokensIn == 0 || redeemAmountIn == 0, "one of redeemTokensIn or redeemAmountIn must be zero");
 
+        /* Verify market's block number equals current block number */
+        if (accrualBlockNumber != getBlockNumber()) {
+            return fail(Error.MARKET_NOT_FRESH, FailureInfo.REDEEM_FRESHNESS_CHECK);
+        }
+
         RedeemLocalVars memory vars;
 
         /* exchangeRate = invoke Exchange Rate Stored() */
@@ -591,9 +596,9 @@ contract PToken is PTokenInterface, ExponentialNoError, TokenErrorReporter {
             return failOpaque(Error.COMPTROLLER_REJECTION, FailureInfo.REDEEM_COMPTROLLER_REJECTION, allowed);
         }
 
-        /* Verify market's block number equals current block number */
-        if (accrualBlockNumber != getBlockNumber()) {
-            return fail(Error.MARKET_NOT_FRESH, FailureInfo.REDEEM_FRESHNESS_CHECK);
+        /* Fail gracefully if protocol has insufficient cash */
+        if (getCashPrior() < vars.redeemAmount) {
+            return fail(Error.TOKEN_INSUFFICIENT_CASH, FailureInfo.REDEEM_TRANSFER_OUT_NOT_POSSIBLE);
         }
 
         /*
@@ -603,11 +608,6 @@ contract PToken is PTokenInterface, ExponentialNoError, TokenErrorReporter {
          */
         vars.totalSupplyNew = sub_(totalSupply, vars.redeemTokens, 'REDEEM_TOO_MUCH');
         vars.accountTokensNew = sub_(accountTokens[redeemer], vars.redeemTokens, 'REDEEM_TOO_MUCH');
-
-        /* Fail gracefully if protocol has insufficient cash */
-        if (getCashPrior() < vars.redeemAmount) {
-            return fail(Error.TOKEN_INSUFFICIENT_CASH, FailureInfo.REDEEM_TRANSFER_OUT_NOT_POSSIBLE);
-        }
 
         /////////////////////////
         // EFFECTS & INTERACTIONS

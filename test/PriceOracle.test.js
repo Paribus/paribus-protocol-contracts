@@ -2,6 +2,7 @@ const {expect} = require("chai")
 const {ethers} = require("hardhat")
 const setupAll = require("./utils/setupAllMocked")
 const {ZERO_ADDRESS} = require("./utils/testHelpers")
+const {expectEvent} = require("./utils/expectAddons");
 
 let app, ChainlinkAggregatorV3Mock, ChainlinkPriceOracle, Api3DapiServerMock, Api3PriceOracleMock
 
@@ -10,6 +11,12 @@ describe("Chainlink Price Oracle", () => {
         app = await setupAll()
         ChainlinkPriceOracle = await ethers.getContractFactory('ChainlinkPriceOracleMock')
         ChainlinkAggregatorV3Mock = await ethers.getContractFactory('ChainlinkAggregatorV3Mock')
+    })
+
+    it("transferOwnership", async () => {
+        const PriceOracle = await ethers.getContractFactory('SimplePriceOracle')
+        const priceOracle = await PriceOracle.deploy()
+        await expectEvent(priceOracle.transferOwnership(app.user1.address), 'OwnershipTransferred')
     })
 
     it("getUnderlyingPrice", async () => {

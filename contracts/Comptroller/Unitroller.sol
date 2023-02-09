@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.5.17;
+pragma solidity 0.5.17;
 
 import "../ErrorReporter.sol";
-import "./ComptrollerInterface.sol";
+import "./ComptrollerInterfaces.sol";
 import "./ComptrollerStorage.sol";
 
 /**
@@ -42,7 +42,7 @@ contract Unitroller is UnitrollerAdminStorage {
     }
 
     /*** Admin Functions ***/
-    function _setPendingImplementations(address newPendingPart1Implementation, address newPendingPart2Implementation) public {
+    function _setPendingImplementations(address newPendingPart1Implementation, address newPendingPart2Implementation) external {
         require(newPendingPart1Implementation != address(0) && newPendingPart2Implementation != address(0));
         require(msg.sender == admin, "Error.UNAUTHORIZED: FailureInfo.SET_PENDING_IMPLEMENTATION_OWNER_CHECK");
 
@@ -57,32 +57,25 @@ contract Unitroller is UnitrollerAdminStorage {
     }
 
     function _setPendingImplementationsInternal(address newPendingPart1Implementation, address newPendingPart2Implementation) internal {
-        address oldPendingPart1Implementation = pendingComptrollerPart1Implementation;
-        address oldPendingPart2Implementation = pendingComptrollerPart2Implementation;
-
+        emit NewPendingImplementations(pendingComptrollerPart1Implementation, newPendingPart1Implementation, pendingComptrollerPart2Implementation, newPendingPart2Implementation);
         pendingComptrollerPart1Implementation = newPendingPart1Implementation;
         pendingComptrollerPart2Implementation = newPendingPart2Implementation;
-
-        emit NewPendingImplementations(oldPendingPart1Implementation, pendingComptrollerPart1Implementation, oldPendingPart2Implementation, pendingComptrollerPart2Implementation);
     }
 
     /**
     * @notice Accepts new implementation of comptroller. msg.sender must be pendingPart1Implementation or pendingPart2Implementation
     * @dev Admin function for new implementation to accept it's role as implementation
     */
-    function _acceptImplementation() public {
+    function _acceptImplementation() external {
         if (msg.sender == pendingComptrollerPart1Implementation) {
-            address oldImplementation = comptrollerPart1Implementation;
+            emit NewImplementation(comptrollerPart1Implementation, pendingComptrollerPart1Implementation, comptrollerPart2Implementation, comptrollerPart2Implementation);
             comptrollerPart1Implementation = pendingComptrollerPart1Implementation;
-            emit NewImplementation(oldImplementation, comptrollerPart1Implementation, comptrollerPart2Implementation, comptrollerPart2Implementation);
 
             _setPendingImplementationsInternal(address(0), pendingComptrollerPart2Implementation);
 
         } else if (msg.sender == pendingComptrollerPart2Implementation) {
-            // Save current values for inclusion in log
-            address oldImplementation = comptrollerPart2Implementation;
+            emit NewImplementation(comptrollerPart1Implementation, comptrollerPart1Implementation, comptrollerPart2Implementation, pendingComptrollerPart2Implementation);
             comptrollerPart2Implementation = pendingComptrollerPart2Implementation;
-            emit NewImplementation(comptrollerPart1Implementation, comptrollerPart1Implementation, oldImplementation, comptrollerPart2Implementation);
 
             _setPendingImplementationsInternal(pendingComptrollerPart1Implementation, address(0));
 
@@ -96,40 +89,24 @@ contract Unitroller is UnitrollerAdminStorage {
       * @dev Admin function to begin change of admin. The newPendingAdmin must call `_acceptAdmin` to finalize the transfer.
       * @param newPendingAdmin New pending admin.
       */
-    function _setPendingAdmin(address newPendingAdmin) public {
-        // Check caller = admin
+    function _setPendingAdmin(address newPendingAdmin) external {
         require(msg.sender == admin, "Error.UNAUTHORIZED: FailureInfo.SET_PENDING_ADMIN_OWNER_CHECK");
 
-        // Save current value, if any, for inclusion in log
-        address oldPendingAdmin = pendingAdmin;
-
-        // Store pendingAdmin with value newPendingAdmin
+        emit NewPendingAdmin(pendingAdmin, newPendingAdmin);
         pendingAdmin = newPendingAdmin;
-
-        // Emit NewPendingAdmin(oldPendingAdmin, newPendingAdmin)
-        emit NewPendingAdmin(oldPendingAdmin, newPendingAdmin);
     }
 
     /**
       * @notice Accepts transfer of admin rights. msg.sender must be pendingAdmin
       * @dev Admin function for pending admin to accept role and update admin
       */
-    function _acceptAdmin() public {
-        // Check caller is pendingAdmin and pendingAdmin ≠ address(0)
+    function _acceptAdmin() external {
         require(msg.sender == pendingAdmin && msg.sender != address(0), "Error.UNAUTHORIZED: FailureInfo.ACCEPT_ADMIN_PENDING_ADMIN_CHECK");
 
-        // Save current values for inclusion in log
-        address oldAdmin = admin;
-        address oldPendingAdmin = pendingAdmin;
-
-        // Store admin with value pendingAdmin
+        emit NewAdmin(admin, pendingAdmin);
+        emit NewPendingAdmin(pendingAdmin, address(0));
         admin = pendingAdmin;
-
-        // Clear the pending value
         pendingAdmin = address(0);
-
-        emit NewAdmin(oldAdmin, admin);
-        emit NewPendingAdmin(oldPendingAdmin, pendingAdmin);
     }
 
     /**
@@ -138,7 +115,7 @@ contract Unitroller is UnitrollerAdminStorage {
      * or forwards reverts.
      */
     function() external payable {
-        // delegate all other functions to current implementation
+        // delegate all other functions to current implementation. ComptrollerPart1 fallback function delegates to ComptrollerPart2
         (bool success,) = comptrollerPart1Implementation.delegatecall(msg.data);
 
         assembly {

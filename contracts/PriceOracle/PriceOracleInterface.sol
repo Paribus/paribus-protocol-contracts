@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.5.17;
+pragma solidity 0.5.17;
 
 import "../PToken/PToken.sol";
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.5.17;
+pragma solidity 0.5.17;
 
 import "../PriceOracle/PriceOracleInterface.sol";
 import "../Interfaces/EIP20Interface.sol";
@@ -17,7 +17,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
      * @param pTokens The list of addresses of the pToken markets to be enabled
      * @return Success indicator for whether each corresponding market was entered
      */
-    function enterMarkets(address[] memory pTokens) public returns (uint[] memory) {
+    function enterMarkets(address[] calldata pTokens) external returns (uint[] memory) {
         uint len = pTokens.length;
 
         uint[] memory results = new uint[](len);
@@ -103,7 +103,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
             return Error.MARKET_NOT_LISTED;
         }
 
-        if (marketToJoin.accountMembership[borrower] == true) { // already joined
+        if (marketToJoin.accountMembership[borrower]) { // already joined
             return Error.NO_ERROR;
         }
 
@@ -169,7 +169,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
      * @param account The account to determine liquidity for
      * @param redeemTokens The number of tokens to hypothetically redeem (if PToken)
      * @param borrowAmount The amount of underlying to hypothetically borrow (if PToken)
-     * @param redeemTokenId unused
+     * @param redeemTokenId Unused, reserved for NFT code
      * @return (possible error code (semi-opaque),
                 hypothetical account liquidity in excess of collateral requirements,
      *          hypothetical account shortfall below collateral requirements)
@@ -184,6 +184,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
      * @param account The account to determine liquidity for
      * @param redeemTokens The number of tokens to hypothetically redeem
      * @param borrowAmount The amount of underlying to hypothetically borrow
+     * @param redeemTokenId Unused, reserved for NFT code
      * @dev Note that we calculate the exchangeRateStored for each collateral pToken using stored data,
      *  without calculating accumulated interest.
      * @return (possible error code,
@@ -373,7 +374,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
         PToken(pToken).isPToken();
 
         // Pausing is a very serious situation - we revert to sound the alarms
-        require(!borrowGuardianPaused[pToken], "borrow is paused");
+        require(!borrowGuardianPaused[pToken] && !borrowGuardianPausedGlobal, "borrow is paused");
 
         if (!markets[pToken].isListed) {
             return uint(Error.MARKET_NOT_LISTED);
@@ -434,7 +435,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
         PToken(pToken).isPToken();
 
         // Pausing is a very serious situation - we revert to sound the alarms
-        require(!transferGuardianPaused, "transfer is paused");
+        require(!transferGuardianPausedGlobal, "transfer is paused");
 
         // Currently the only consideration is whether or not
         //  the src is allowed to redeem this many tokens
@@ -462,7 +463,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
         PToken(pToken).isPToken();
 
         // Pausing is a very serious situation - we revert to sound the alarms
-        require(!mintGuardianPaused[pToken], "mint is paused");
+        require(!mintGuardianPaused[pToken] && !mintGuardianPausedGlobal, "mint is paused");
 
         // Shh - currently unused
         minter;
@@ -520,7 +521,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
         PToken(pTokenBorrowed).isPToken();
 
         // Pausing is a very serious situation - we revert to sound the alarms
-        require(!seizeGuardianPaused, "seize is paused");
+        require(!seizeGuardianPausedGlobal, "seize is paused");
 
         seizeTokens; // Shh - currently unused
 
@@ -585,7 +586,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
     * @notice Claim all the PBX accrued by holder in all markets
     * @param holder The address to claim PBX for
     */
-    function claimPBXReward(address holder) public {
+    function claimPBXReward(address holder) external {
         return claimPBX(holder, allMarkets);
     }
 
@@ -613,14 +614,14 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
             pToken.isPToken();
 
             require(markets[address(pToken)].isListed, "market must be listed");
-            if (borrowers == true) {
+            if (borrowers) {
                 Exp memory borrowIndex = Exp({mantissa: pToken.borrowIndex()});
                 updatePBXBorrowIndex(address(pToken), borrowIndex);
                 for (uint j = 0; j < holders.length; j++) {
                     distributeBorrowerPBX(address(pToken), holders[j], borrowIndex);
                 }
             }
-            if (suppliers == true) {
+            if (suppliers) {
                 updatePBXSupplyIndex(address(pToken));
                 for (uint j = 0; j < holders.length; j++) {
                     distributeSupplierPBX(address(pToken), holders[j]);
@@ -691,7 +692,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
      * @param recipient The address of the recipient to transfer PBX to
      * @param amount The amount of PBX to (possibly) transfer
      */
-    function _grantPBX(address recipient, uint amount) public {
+    function _grantPBX(address recipient, uint amount) external {
         adminOrInitializing();
 
         uint amountLeft = grantPBXInternal(recipient, amount);
@@ -705,7 +706,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
      * @param supplySpeeds New supply-side PBX speed for the corresponding market.
      * @param borrowSpeeds New borrow-side PBX speed for the corresponding market.
      */
-    function _setPBXSpeeds(PToken[] memory pTokens, uint[] memory supplySpeeds, uint[] memory borrowSpeeds) public {
+    function _setPBXSpeeds(PToken[] calldata pTokens, uint[] calldata supplySpeeds, uint[] calldata borrowSpeeds) external {
         adminOrInitializing();
 
         uint numTokens = pTokens.length;
@@ -721,7 +722,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
      * @param contributor The contributor whose PBX speed to update
      * @param PBXSpeed New PBX speed for contributor
      */
-    function _setContributorPBXSpeed(address contributor, uint PBXSpeed) public {
+    function _setContributorPBXSpeed(address contributor, uint PBXSpeed) external {
         adminOrInitializing();
 
         // note that PBX speed could be set to 0 to halt liquidity rewards for a contributor
@@ -750,8 +751,8 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
         if (deltaBlocks > 0 && supplySpeed > 0) {
             uint totalSupply = PToken(pToken).totalSupply();
             uint supplyTokens = totalSupply > 0 ? sub_(totalSupply, PToken(pToken).MINIMUM_LIQUIDITY()) : 0;
-            uint PBXAccrued = mul_(deltaBlocks, supplySpeed);
-            Double memory ratio = supplyTokens > 0 ? fraction(PBXAccrued, supplyTokens) : Double({mantissa : 0});
+            uint newPBXAccrued = mul_(deltaBlocks, supplySpeed);
+            Double memory ratio = supplyTokens > 0 ? fraction(newPBXAccrued, supplyTokens) : Double({mantissa : 0});
             supplyState.index = safe224(add_(Double({mantissa : supplyState.index}), ratio).mantissa, "new index exceeds 224 bits");
             supplyState.block = blockNumber;
         } else if (deltaBlocks > 0) {
@@ -765,10 +766,6 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
      * @param supplier The address of the supplier to distribute PBX to
      */
     function distributeSupplierPBX(address pToken, address supplier) internal {
-        // TODO: Don't distribute supplier PBX if the user is not in the supplier market.
-        // This check should be as gas efficient as possible as distributeSupplierPBX is called in many places.
-        // - We really don't want to call an external contract as that's quite expensive.
-
         PBXMarketState storage supplyState = PBXSupplyState[pToken];
         uint supplyIndex = supplyState.index;
         uint supplierIndex = PBXSupplierIndex[pToken][supplier];
@@ -827,9 +824,6 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
      * @param borrower The address of the borrower to distribute PBX to
      */
     function distributeBorrowerPBX(address pToken, address borrower, Exp memory marketBorrowIndex) internal {
-        // TODO: Don't distribute supplier PBX if the user is not in the borrower market.
-        // This check should be as gas efficient as possible as distributeBorrowerPBX is called in many places.
-        // - We really don't want to call an external contract as that's quite expensive.
         PToken(pToken).isPToken();
 
         PBXMarketState storage borrowState = PBXBorrowState[pToken];

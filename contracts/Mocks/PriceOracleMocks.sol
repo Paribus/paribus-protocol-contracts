@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.5.17;
+pragma solidity 0.5.17;
 
 import "../PriceOracle/Impl/ChainlinkPriceOracle.sol";
 import "../PriceOracle/Impl/Api3PriceOracle.sol";

@@ -1,19 +1,19 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.5.17;
+pragma solidity 0.5.17;
 
 import "../ErrorReporter.sol";
 import "../Utils/ExponentialNoError.sol";
 import "../PToken/PToken.sol";
 import "./ComptrollerStorage.sol";
 import "./Unitroller.sol";
-import "./ComptrollerInterface.sol";
+import "./ComptrollerInterfaces.sol";
 
 contract ComptrollerCommonImpl is ComptrollerCommonInterface, ComptrollerErrorReporter, ExponentialNoError {
     constructor() internal {
         admin = msg.sender;
     }
 
-    function _become(Unitroller unitroller) public {
+    function _become(Unitroller unitroller) external {
         require(msg.sender == unitroller.admin(), "only unitroller admin can change brains");
         unitroller._acceptImplementation();
     }

@@ -46,8 +46,6 @@ module.exports = {
             accounts: {
                 accountsBalance: "1000000000000000000000"
             },
-            gasPrice: 8000000000,
-            gas: 9500000,
             allowUnlimitedContractSize: true
         },
         ganache: {

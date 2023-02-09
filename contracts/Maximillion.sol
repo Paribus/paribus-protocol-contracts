@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.5.17;
+pragma solidity 0.5.17;
 
 import "./PToken/PEther/PEther.sol";
 
@@ -25,7 +25,7 @@ contract Maximillion {
      * @dev The provided Ether is applied towards the borrow balance, any excess is refunded
      * @param borrower The address of the borrower account to repay on behalf of
      */
-    function repayBehalf(address borrower) public payable {
+    function repayBehalf(address borrower) external payable {
         repayBehalfExplicit(borrower, pEther);
     }
 

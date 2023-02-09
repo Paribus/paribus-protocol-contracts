@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.5.17;
+pragma solidity 0.5.17;
 
 import "../PTokenInterfaces.sol";
 
@@ -87,7 +87,7 @@ contract PErc20Delegator is PTokenStorage, PTokenDelegatorInterface {
      */
     function _setImplementation(address implementation_, bool allowResign, bytes memory becomeImplementationData) public {
         require(msg.sender == admin, "PErc20Delegator::_setImplementation: Caller must be admin");
-        require(PTokenInterface(implementation_).isPToken());
+        require(PTokenInterface(implementation_).isPToken(), "invalid argument");
 
         if (allowResign) {
             delegateToImplementation(abi.encodeWithSignature("_resignImplementation()"));

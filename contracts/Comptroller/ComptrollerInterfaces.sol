@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.5.17;
+pragma solidity 0.5.17;
 
 import "../PToken/PToken.sol";
 import "../PriceOracle/PriceOracleInterface.sol";
@@ -11,19 +11,19 @@ contract ComptrollerCommonInterface is ComptrollerStorage {
     function isComptroller() external pure returns (bool);
 
     /// @notice Emitted when an admin supports a market (marketType 0 == standard assets)
-    event MarketListed(address pToken, uint indexed marketType, address underlying);
+    event MarketListed(address indexed pToken, uint indexed marketType, address underlying);
 
     /// @notice Emitted when an account enters a market
-    event MarketEntered(address pToken, address account);
+    event MarketEntered(address indexed pToken, address indexed account);
 
     /// @notice Emitted when an account exits a market
-    event MarketExited(address pToken, address account);
+    event MarketExited(address indexed pToken, address indexed account);
 
     /// @notice Emitted when close factor is changed by admin
     event NewCloseFactor(uint oldCloseFactorMantissa, uint newCloseFactorMantissa);
 
     /// @notice Emitted when a collateral factor is changed by admin
-    event NewCollateralFactor(address pToken, uint oldCollateralFactorMantissa, uint newCollateralFactorMantissa);
+    event NewCollateralFactor(address indexed pToken, uint oldCollateralFactorMantissa, uint newCollateralFactorMantissa);
 
     /// @notice Emitted when liquidation incentive is changed by admin
     event NewLiquidationIncentive(uint oldLiquidationIncentiveMantissa, uint newLiquidationIncentiveMantissa);
@@ -35,7 +35,7 @@ contract ComptrollerCommonInterface is ComptrollerStorage {
     event NewPauseGuardian(address oldPauseGuardian, address newPauseGuardian);
 
     /// @notice Emitted when an action is paused on a market or globally (pToken == 0)
-    event ActionPaused(address pToken, string action, bool pauseState);
+    event ActionPaused(address indexed pToken, string indexed action, bool pauseState);
 
     /// @notice Emitted when a new borrow-side PBX speed is calculated for a market
     event PBXBorrowSpeedUpdated(PToken indexed pToken, uint newSpeed);
@@ -59,9 +59,11 @@ contract ComptrollerCommonInterface is ComptrollerStorage {
     event NewBorrowCapGuardian(address oldBorrowCapGuardian, address newBorrowCapGuardian);
 
     /// @notice Emitted when PBX is granted by admin
-    event PBXGranted(address recipient, uint amount);
+    event PBXGranted(address indexed recipient, uint amount);
 
-    function _become(Unitroller unitroller) public;
+    event NewPBXToken(address oldPBXToken, address newPBXToken);
+
+    function _become(Unitroller unitroller) external;
 }
 
 contract ComptrollerPart1Interface is ComptrollerCommonInterface {
@@ -77,19 +79,21 @@ contract ComptrollerPart1Interface is ComptrollerCommonInterface {
 
     /*** Admin Functions ***/
 
-    function _setPriceOracle(PriceOracleInterface newOracle) public returns (uint);
-    function _setCloseFactor(uint newCloseFactorMantissa) external returns (uint);
+    function _setPriceOracle(PriceOracleInterface newOracle) external;
+    function _setCloseFactor(uint newCloseFactorMantissa) external;
     function _setCollateralFactor(PToken pToken, uint newCollateralFactorMantissa) external returns (uint);
-    function _setLiquidationIncentive(uint newLiquidationIncentiveMantissa) external returns (uint);
+    function _setLiquidationIncentive(uint newLiquidationIncentiveMantissa) external;
     function _supportMarket(PToken pToken) external returns (uint);
     function _setMarketBorrowCaps(PToken[] calldata pTokens, uint[] calldata newBorrowCaps) external;
     function _setBorrowCapGuardian(address newBorrowCapGuardian) external;
-    function _setPauseGuardian(address newPauseGuardian) public returns (uint);
-    function _setMintPaused(address pToken, bool state) public returns (bool);
-    function _setBorrowPaused(address pToken, bool state) public returns (bool);
-    function _setTransferPaused(bool state) public returns (bool);
-    function _setSeizePaused(bool state) public returns (bool);
-    function _setPBXToken(address PBXTokenAddress) public;
+    function _setPauseGuardian(address newPauseGuardian) external;
+    function _setMintPaused(address pToken, bool state) external returns (bool);
+    function _setMintPausedGlobal(bool state) external returns (bool);
+    function _setBorrowPaused(address pToken, bool state) external returns (bool);
+    function _setBorrowPausedGlobal(bool state) external returns (bool);
+    function _setTransferPaused(bool state) external returns (bool);
+    function _setSeizePaused(bool state) external returns (bool);
+    function _setPBXToken(address newPBXTokenAddress) external;
 
     /*** Policy Hooks ***/
 
@@ -108,7 +112,7 @@ contract ComptrollerPart2Interface is ComptrollerCommonInterface {
 
     /*** Assets You Are In ***/
 
-    function enterMarkets(address[] memory pTokens) public returns (uint[] memory);
+    function enterMarkets(address[] calldata pTokens) external returns (uint[] memory);
     function exitMarket(address pToken) external returns (uint);
 
     /*** Liquidity/Liquidation Calculations ***/
@@ -131,15 +135,16 @@ contract ComptrollerPart2Interface is ComptrollerCommonInterface {
     /*** PBX Distribution ***/
 
     function updateContributorRewards(address contributor) public;
-    function claimPBXReward(address holder) public;
+    function claimPBXReward(address holder) external;
     function claimPBX(address holder, PToken[] memory pTokens) public;
     function claimPBX(address[] memory holders, PToken[] memory pTokens, bool borrowers, bool suppliers) public;
 
     /*** PBX Distribution Admin ***/
 
-    function _grantPBX(address recipient, uint amount) public;
-    function _setPBXSpeeds(PToken[] memory pTokens, uint[] memory supplySpeeds, uint[] memory borrowSpeeds) public;
-    function _setContributorPBXSpeed(address contributor, uint PBXSpeed) public;
+    function _grantPBX(address recipient, uint amount) external;
+    function _setPBXSpeeds(PToken[] calldata pTokens, uint[] calldata supplySpeeds, uint[] calldata borrowSpeeds) external;
+    function _setContributorPBXSpeed(address contributor, uint PBXSpeed) external;
 }
 
 contract ComptrollerInterface is ComptrollerPart1Interface, ComptrollerPart2Interface { }
+

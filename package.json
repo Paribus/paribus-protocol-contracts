@@ -46,9 +46,9 @@
     "minimist": "^1.2.6",
     "node-fetch": "^2.6.7",
     "openzeppelin-solidity-2.3.0": "npm:openzeppelin-solidity@2.3.0",
-    "solidity-coverage": "^0.7.20",
+    "solidity-coverage": "^0.8.2",
     "solparse": "^2.2.8",
-    "synthetix": "^2.66.0",
+    "synthetix": "2.66.0",
     "underscore": "^1.12.1",
     "yargs-parser": "^21.0.1"
   }

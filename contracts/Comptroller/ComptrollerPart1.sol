@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.5.17;
+pragma solidity 0.5.17;
 
 import "../PriceOracle/PriceOracleInterface.sol";
 import "../Interfaces/EIP20Interface.sol";
@@ -82,39 +82,26 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
     /**
       * @notice Sets a new price oracle for the comptroller
       * @dev Admin function to set a new price oracle
-      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
       */
-    function _setPriceOracle(PriceOracleInterface newOracle) public returns (uint) {
+    function _setPriceOracle(PriceOracleInterface newOracle) external {
         onlyAdmin();
-        require(newOracle.isPriceOracle(), "invalid value");
+        require(newOracle.isPriceOracle(), "invalid argument");
 
-        // Track the old oracle for the comptroller
-        PriceOracleInterface oldOracle = oracle;
-
-        // Set comptroller's oracle to newOracle
+        emit NewPriceOracle(oracle, newOracle);
         oracle = newOracle;
-
-        // Emit NewPriceOracle(oldOracle, newOracle)
-        emit NewPriceOracle(oldOracle, newOracle);
-
-        return uint(Error.NO_ERROR);
     }
 
     /**
       * @notice Sets the closeFactor used when liquidating borrows
       * @dev Admin function to set closeFactor
       * @param newCloseFactorMantissa New close factor, scaled by 1e18
-      * @return uint 0=success, otherwise a failure
       */
-    function _setCloseFactor(uint newCloseFactorMantissa) external returns (uint) {
+    function _setCloseFactor(uint newCloseFactorMantissa) external {
         onlyAdmin();
-        require(newCloseFactorMantissa <= 10 ** 18, "invalid value");
+        require(newCloseFactorMantissa <= 10 ** 18, "invalid argument");
 
-        uint oldCloseFactorMantissa = closeFactorMantissa;
+        emit NewCloseFactor(closeFactorMantissa, newCloseFactorMantissa);
         closeFactorMantissa = newCloseFactorMantissa;
-        emit NewCloseFactor(oldCloseFactorMantissa, closeFactorMantissa);
-
-        return uint(Error.NO_ERROR);
     }
 
     /**
@@ -125,8 +112,8 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
       * @return uint 0=success, otherwise a failure. (See ErrorReporter for details)
       */
     function _setCollateralFactor(PToken pToken, uint newCollateralFactorMantissa) external returns (uint) {
-        require(newCollateralFactorMantissa <= 10 ** 18, "invalid value");
-        pToken.isPToken();
+        require(newCollateralFactorMantissa <= 10 ** 18, "invalid argument");
+        require(pToken.isPToken());
 
         // If collateral factor != 0, fail if price == 0
         if (newCollateralFactorMantissa != 0 && oracle.getUnderlyingPrice(pToken) == 0) {
@@ -153,13 +140,8 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
             return fail(Error.INVALID_COLLATERAL_FACTOR, FailureInfo.SET_COLLATERAL_FACTOR_VALIDATION);
         }
 
-        // Set market's collateral factor to new collateral factor, remember old value
-        uint oldCollateralFactorMantissa = market.collateralFactorMantissa;
+        emit NewCollateralFactor(pToken, market.collateralFactorMantissa, newCollateralFactorMantissa);
         market.collateralFactorMantissa = newCollateralFactorMantissa;
-
-        // Emit event with asset, old collateral factor, and new collateral factor
-        emit NewCollateralFactor(pToken, oldCollateralFactorMantissa, newCollateralFactorMantissa);
-
         return uint(Error.NO_ERROR);
     }
 
@@ -167,22 +149,13 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
       * @notice Sets liquidationIncentive
       * @dev Admin function to set liquidationIncentive
       * @param newLiquidationIncentiveMantissa New liquidationIncentive scaled by 1e18
-      * @return uint 0=success, otherwise a failure. (See ErrorReporter for details)
       */
-    function _setLiquidationIncentive(uint newLiquidationIncentiveMantissa) external returns (uint) {
+    function _setLiquidationIncentive(uint newLiquidationIncentiveMantissa) external {
         onlyAdmin();
-        require(newLiquidationIncentiveMantissa >= 10 ** 18, "invalid value");
+        require(newLiquidationIncentiveMantissa >= 10 ** 18, "invalid argument");
 
-        // Save current value for use in log
-        uint oldLiquidationIncentiveMantissa = liquidationIncentiveMantissa;
-
-        // Set liquidation incentive to new incentive
+        emit NewLiquidationIncentive(liquidationIncentiveMantissa, newLiquidationIncentiveMantissa);
         liquidationIncentiveMantissa = newLiquidationIncentiveMantissa;
-
-        // Emit event with old incentive, new incentive
-        emit NewLiquidationIncentive(oldLiquidationIncentiveMantissa, newLiquidationIncentiveMantissa);
-
-        return uint(Error.NO_ERROR);
     }
 
     /**
@@ -273,85 +246,91 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
     function _setBorrowCapGuardian(address newBorrowCapGuardian) external {
         onlyAdmin();
 
-        // Save current value for inclusion in log
-        address oldBorrowCapGuardian = borrowCapGuardian;
-
-        // Store borrowCapGuardian with value newBorrowCapGuardian
+        emit NewBorrowCapGuardian(borrowCapGuardian, newBorrowCapGuardian);
         borrowCapGuardian = newBorrowCapGuardian;
-
-        // Emit NewBorrowCapGuardian(OldBorrowCapGuardian, NewBorrowCapGuardian)
-        emit NewBorrowCapGuardian(oldBorrowCapGuardian, newBorrowCapGuardian);
     }
 
     /**
      * @notice Admin function to change the Pause Guardian
      * @param newPauseGuardian The address of the new Pause Guardian
-     * @return uint 0=success, otherwise a failure. (See enum Error for details)
      */
-    function _setPauseGuardian(address newPauseGuardian) public returns (uint) {
+    function _setPauseGuardian(address newPauseGuardian) external {
         onlyAdmin();
 
-        // Save current value for inclusion in log
-        address oldPauseGuardian = pauseGuardian;
-
-        // Store pauseGuardian with value newPauseGuardian
+        emit NewPauseGuardian(pauseGuardian, newPauseGuardian);
         pauseGuardian = newPauseGuardian;
-
-        // Emit NewPauseGuardian(OldPauseGuardian, NewPauseGuardian)
-        emit NewPauseGuardian(oldPauseGuardian, pauseGuardian);
-
-        return uint(Error.NO_ERROR);
     }
 
-    function _setMintPaused(address pToken, bool state) public returns (bool) {
+    function _setMintPausedGlobal(bool state) external returns (bool) {
+        require(msg.sender == pauseGuardian || msg.sender == admin, "only pause guardian and admin can pause");
+        require(msg.sender == admin || state, "only admin can unpause");
+
+        mintGuardianPausedGlobal = state;
+        emit ActionPaused(address(0), "Mint", state);
+        return state;
+    }
+
+    function _setMintPaused(address pToken, bool state) external returns (bool) {
         require(markets[pToken].isListed, "cannot pause a market that is not listed");
         require(msg.sender == pauseGuardian || msg.sender == admin, "only pause guardian and admin can pause");
-        require(msg.sender == admin || state == true, "only admin can unpause");
+        require(msg.sender == admin || state, "only admin can unpause");
 
         mintGuardianPaused[pToken] = state;
         emit ActionPaused(pToken, "Mint", state);
         return state;
     }
 
-    function _setBorrowPaused(address pToken, bool state) public returns (bool) {
+    function _setBorrowPaused(address pToken, bool state) external returns (bool) {
         require(markets[pToken].isListed, "cannot pause a market that is not listed");
         require(msg.sender == pauseGuardian || msg.sender == admin, "only pause guardian and admin can pause");
-        require(msg.sender == admin || state == true, "only admin can unpause");
+        require(msg.sender == admin || state, "only admin can unpause");
 
         borrowGuardianPaused[pToken] = state;
         emit ActionPaused(pToken, "Borrow", state);
         return state;
     }
 
-    function _setTransferPaused(bool state) public returns (bool) {
+    function _setBorrowPausedGlobal(bool state) external returns (bool) {
         require(msg.sender == pauseGuardian || msg.sender == admin, "only pause guardian and admin can pause");
-        require(msg.sender == admin || state == true, "only admin can unpause");
+        require(msg.sender == admin || state, "only admin can unpause");
 
-        transferGuardianPaused = state;
+        borrowGuardianPausedGlobal = state;
+        emit ActionPaused(address(0), "Borrow", state);
+        return state;
+    }
+
+    function _setTransferPaused(bool state) external returns (bool) {
+        require(msg.sender == pauseGuardian || msg.sender == admin, "only pause guardian and admin can pause");
+        require(msg.sender == admin || state, "only admin can unpause");
+
+        transferGuardianPausedGlobal = state;
         emit ActionPaused(address(0), "Transfer", state);
         return state;
     }
 
-    function _setSeizePaused(bool state) public returns (bool) {
+    function _setSeizePaused(bool state) external returns (bool) {
         require(msg.sender == pauseGuardian || msg.sender == admin, "only pause guardian and admin can pause");
-        require(msg.sender == admin || state == true, "only admin can unpause");
+        require(msg.sender == admin || state, "only admin can unpause");
 
-        seizeGuardianPaused = state;
+        seizeGuardianPausedGlobal = state;
         emit ActionPaused(address(0), "Seize", state);
         return state;
     }
 
-    function _setPBXToken(address PBXTokenAddress) public {
+    function _setPBXToken(address newPBXTokenAddress) external {
         onlyAdmin();
-        EIP20Interface(PBXTokenAddress).balanceOf(address(this)); // check
-        PBXToken = PBXTokenAddress;
+        require(newPBXTokenAddress != address(0), "invalid argument");
+        require(PBXToken == address(0), "PBXToken already set");
+
+        emit NewPBXToken(PBXToken, newPBXTokenAddress);
+        PBXToken = newPBXTokenAddress;
     }
 
     /*** Policy Hooks ***/
     /*** Those function should not be marked as pure, view ***/
 
     /**
-     * @notice Validates mint and reverts on rejection. May emit logs.
+     * @notice Validates mint and reverts on rejection. May emit logs. Now empty, reserved for potential future use.
      * @param pToken Asset being minted
      * @param minter The address minting the tokens
      * @param actualMintAmount The amount of the underlying asset being minted
@@ -376,7 +355,7 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
     }
 
     /**
-     * @notice Validates borrow and reverts on rejection. May emit logs.
+     * @notice Validates borrow and reverts on rejection. May emit logs. Now empty, reserved for potential future use.
      * @param pToken Asset whose underlying is being borrowed
      * @param borrower The address borrowing the underlying
      * @param borrowAmount The amount of the underlying asset requested to borrow
@@ -384,7 +363,7 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
     function borrowVerify(address pToken, address borrower, uint borrowAmount) external { }
 
     /**
-     * @notice Validates repayBorrow and reverts on rejection. May emit logs.
+     * @notice Validates repayBorrow and reverts on rejection. May emit logs. Now empty, reserved for potential future use.
      * @param pToken Asset being repaid
      * @param payer The address repaying the borrow
      * @param borrower The address of the borrower
@@ -393,7 +372,7 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
     function repayBorrowVerify(address pToken, address payer, address borrower, uint actualRepayAmount, uint borrowerIndex) external { }
 
     /**
-     * @notice Validates liquidateBorrow and reverts on rejection. May emit logs.
+     * @notice Validates liquidateBorrow and reverts on rejection. May emit logs. Now empty, reserved for potential future use.
      * @param pTokenBorrowed Asset which was borrowed by the borrower
      * @param pTokenCollateral Asset which was used as collateral and will be seized
      * @param liquidator The address repaying the borrow and seizing the collateral
@@ -403,7 +382,7 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
     function liquidateBorrowVerify(address pTokenBorrowed, address pTokenCollateral, address liquidator, address borrower, uint actualRepayAmount, uint seizeTokens) external { }
 
     /**
-     * @notice Validates seize and reverts on rejection. May emit logs.
+     * @notice Validates seize and reverts on rejection. May emit logs. Now empty, reserved for potential future use.
      * @param pTokenCollateral Asset which was used as collateral and will be seized
      * @param pTokenBorrowed Asset which was borrowed by the borrower
      * @param liquidator The address repaying the borrow and seizing the collateral
@@ -413,7 +392,7 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
     function seizeVerify(address pTokenCollateral, address pTokenBorrowed, address liquidator, address borrower, uint seizeTokens) external { }
 
     /**
-     * @notice Validates transfer and reverts on rejection. May emit logs.
+     * @notice Validates transfer and reverts on rejection. May emit logs. Now empty, reserved for potential future use.
      * @param pToken Asset being transferred
      * @param src The account which sources the tokens
      * @param dst The account which receives the tokens

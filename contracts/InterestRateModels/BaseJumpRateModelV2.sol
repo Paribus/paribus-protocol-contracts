@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.5.16;
+pragma solidity 0.5.17;
 
 import "../Utils/SafeMath.sol";
 
@@ -78,7 +78,7 @@ contract BaseJumpRateModelV2 {
       * @dev Admin function to begin change of owner. The newPendingOwner must call `_acceptAdmin` to finalize the transfer.
       * @param newPendingOwner New pending owner.
       */
-    function _setPendingAdmin(address newPendingOwner) public {
+    function _setPendingAdmin(address newPendingOwner) external {
         // Check caller = owner
         require(msg.sender == owner, "Error.UNAUTHORIZED FailureInfo.SET_PENDING_ADMIN_OWNER_CHECK");
 
@@ -96,7 +96,7 @@ contract BaseJumpRateModelV2 {
       * @notice Accepts transfer of owner rights. msg.sender must be pendingOwner
       * @dev Admin function for pending owner to accept role and update owner
       */
-    function _acceptAdmin() public {
+    function _acceptAdmin() external {
         // Check caller is pendingOwner and pendingOwner ≠ address(0)
         require(msg.sender == pendingOwner && msg.sender != address(0), "Error.UNAUTHORIZED FailureInfo.ACCEPT_ADMIN_PENDING_ADMIN_CHECK");
 

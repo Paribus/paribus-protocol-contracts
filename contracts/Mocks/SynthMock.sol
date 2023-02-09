@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.5.16;
+pragma solidity 0.5.17;
 
 import "synthetix/contracts/Synth.sol";
 import "synthetix/contracts/MultiCollateralSynth.sol";

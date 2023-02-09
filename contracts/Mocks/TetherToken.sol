@@ -2,7 +2,7 @@
  *Submitted for verification at Etherscan.io on 2017-11-28
 */
 
-pragma solidity ^0.4.17;
+pragma solidity 0.4.17;
 
 /**
  * @title SafeMath

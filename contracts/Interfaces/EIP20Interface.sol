@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-pragma solidity ^0.5.16;
+pragma solidity 0.5.17;
 
 /**
  * @title ERC 20 Token Standard Interface
