@@ -122,10 +122,10 @@ contract ComptrollerStorage is UnitrollerAdminStorage {
     /// @notice The PBX accrued but not yet transferred to each user
     mapping(address => uint) public PBXAccrued;
 
-    // @notice The borrowCapGuardian can set borrowCaps to any number for any market. Lowering the borrow cap could disable borrowing on the given market.
+    /// @notice The borrowCapGuardian can set borrowCaps to any number for any market. Lowering the borrow cap could disable borrowing on the given market.
     address public borrowCapGuardian;
 
-    // @notice Borrow caps enforced by borrowAllowed for each pToken address. Defaults to zero which corresponds to unlimited borrowing.
+    /// @notice Borrow caps enforced by borrowAllowed for each pToken address. Defaults to zero which corresponds to unlimited borrowing.
     mapping(address => uint) public borrowCaps;
 
     /// @notice The portion of PBX that each contributor receives per block
@@ -134,6 +134,7 @@ contract ComptrollerStorage is UnitrollerAdminStorage {
     /// @notice Last block at which a contributor's PBX rewards have been allocated
     mapping(address => uint) public lastContributorBlock;
 
+    /// @notice The PBX governance token
     address public PBXToken;
 
     /// @notice The rate at which PBX is distributed to the corresponding borrow market (per block)
@@ -145,12 +146,12 @@ contract ComptrollerStorage is UnitrollerAdminStorage {
     /// @notice The initial PBX index for a market
     uint224 public constant PBXInitialIndex = 1e36;
 
-    // closeFactorMantissa must be strictly greater than this value
+    /// @dev closeFactorMantissa must be strictly greater than this value
     uint internal constant closeFactorMinMantissa = 0.05e18; // 0.05
 
-    // closeFactorMantissa must not exceed this value
+    /// @dev closeFactorMantissa must not exceed this value
     uint internal constant closeFactorMaxMantissa = 0.9e18; // 0.9
 
-    // No collateralFactorMantissa may exceed this value
+    /// @dev No collateralFactorMantissa may exceed this value
     uint internal constant collateralFactorMaxMantissa = 0.9e18; // 0.9
 }

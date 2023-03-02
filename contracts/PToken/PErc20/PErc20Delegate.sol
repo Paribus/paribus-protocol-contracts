@@ -20,13 +20,13 @@ contract PErc20Delegate is PErc20, PTokenDelegateInterface {
      */
     function _becomeImplementation(bytes calldata data) external {
         data; // Shh -- currently unused
-        require(msg.sender == admin, "only the admin may call _becomeImplementation");
+        require(msg.sender == admin, "only admin");
     }
 
     /**
      * @notice Called by the delegator on a delegate to forfeit its responsibility. Should not be marked as pure
      */
     function _resignImplementation() external {
-        require(msg.sender == admin, "only the admin may call _resignImplementation");
+        require(msg.sender == admin, "only admin");
     }
 }

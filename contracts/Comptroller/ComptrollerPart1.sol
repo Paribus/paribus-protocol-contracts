@@ -40,6 +40,11 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
         return allMarkets;
     }
 
+    /**
+     * @notice Returns deposit, borrow balance for a given account
+     * @param account The address of the account to check
+     * @return (deposit value, 0, borrow value)
+     */
     function getDepositBorrowValues(address account) external view returns (uint, uint, uint) {
         (uint standardAssetsSumDeposit, uint sumBorrowPlusEffects) = getStandardAssetsDepositBorrowValuesInternal(account);
         return (standardAssetsSumDeposit, 0, sumBorrowPlusEffects);
@@ -85,7 +90,7 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
       */
     function _setPriceOracle(PriceOracleInterface newOracle) external {
         onlyAdmin();
-        require(newOracle.isPriceOracle(), "invalid argument");
+        require(newOracle.isPriceOracle(), "incorrect oracle");
 
         emit NewPriceOracle(oracle, newOracle);
         oracle = newOracle;
@@ -113,7 +118,7 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
       */
     function _setCollateralFactor(PToken pToken, uint newCollateralFactorMantissa) external returns (uint) {
         require(newCollateralFactorMantissa <= 10 ** 18, "invalid argument");
-        require(pToken.isPToken());
+        require(pToken.isPToken(), "incorrect asset");
 
         // If collateral factor != 0, fail if price == 0
         if (newCollateralFactorMantissa != 0 && oracle.getUnderlyingPrice(pToken) == 0) {
@@ -165,12 +170,12 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
       * @return uint 0=success, otherwise a failure. (See enum Error for details)
       */
     function _supportMarket(PToken pToken) external returns (uint) {
-        pToken.isPToken(); // Sanity check to make sure its really a PToken
+        require(pToken.isPToken(), "incorrect asset");
 
         uint err = _supportMarketInternal(address(pToken));
         if (err != uint(Error.NO_ERROR)) return err;
 
-        for (uint i = 0; i < allMarkets.length; i ++) {
+        for (uint i = 0; i < allMarkets.length; i++) {
             require(allMarkets[i] != pToken, "market already added");
         }
 
@@ -178,7 +183,6 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
 
         _initializeMarket(address(pToken));
         emit MarketListed(address(pToken), 0, address(0));
-
         return uint(Error.NO_ERROR);
     }
 
@@ -233,7 +237,7 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
         require(numMarkets != 0 && numMarkets == numBorrowCaps, "invalid input");
 
         for (uint i = 0; i < numMarkets; i++) {
-            pTokens[i].isPToken();
+            require(pTokens[i].isPToken(), "incorrect asset");
             borrowCaps[address(pTokens[i])] = newBorrowCaps[i];
             emit NewBorrowCap(pTokens[i], newBorrowCaps[i]);
         }
@@ -261,6 +265,11 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
         pauseGuardian = newPauseGuardian;
     }
 
+    /**
+     * @notice Admin function to pause / unpause the token mint feature for all markets
+     * @param state true if paused, false if unpaused
+     * @return new state
+     */
     function _setMintPausedGlobal(bool state) external returns (bool) {
         require(msg.sender == pauseGuardian || msg.sender == admin, "only pause guardian and admin can pause");
         require(msg.sender == admin || state, "only admin can unpause");
@@ -270,6 +279,12 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
         return state;
     }
 
+    /**
+     * @notice Admin function to pause / unpause the token mint feature for a given market
+     * @param state true if paused, false if unpaused
+     * @param pToken the market to pause / unpause
+     * @return new state
+     */
     function _setMintPaused(address pToken, bool state) external returns (bool) {
         require(markets[pToken].isListed, "cannot pause a market that is not listed");
         require(msg.sender == pauseGuardian || msg.sender == admin, "only pause guardian and admin can pause");
@@ -280,6 +295,12 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
         return state;
     }
 
+    /**
+     * @notice Admin function to pause / unpause the token borrow feature for a given market
+     * @param state true if paused, false if unpaused
+     * @param pToken the market to pause / unpause
+     * @return new state
+     */
     function _setBorrowPaused(address pToken, bool state) external returns (bool) {
         require(markets[pToken].isListed, "cannot pause a market that is not listed");
         require(msg.sender == pauseGuardian || msg.sender == admin, "only pause guardian and admin can pause");
@@ -290,6 +311,11 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
         return state;
     }
 
+    /**
+     * @notice Admin function to pause / unpause the token borrow feature for all markets
+     * @param state true if paused, false if unpaused
+     * @return new state
+     */
     function _setBorrowPausedGlobal(bool state) external returns (bool) {
         require(msg.sender == pauseGuardian || msg.sender == admin, "only pause guardian and admin can pause");
         require(msg.sender == admin || state, "only admin can unpause");
@@ -299,6 +325,11 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
         return state;
     }
 
+    /**
+     * @notice Admin function to pause / unpause the token transfer feature for all markets
+     * @param state true if paused, false if unpaused
+     * @return new state
+     */
     function _setTransferPaused(bool state) external returns (bool) {
         require(msg.sender == pauseGuardian || msg.sender == admin, "only pause guardian and admin can pause");
         require(msg.sender == admin || state, "only admin can unpause");
@@ -308,6 +339,11 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
         return state;
     }
 
+    /**
+     * @notice Admin function to pause / unpause the token liquidation feature for all markets
+     * @param state true if paused, false if unpaused
+     * @return new state
+     */
     function _setSeizePaused(bool state) external returns (bool) {
         require(msg.sender == pauseGuardian || msg.sender == admin, "only pause guardian and admin can pause");
         require(msg.sender == admin || state, "only admin can unpause");
@@ -317,6 +353,10 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
         return state;
     }
 
+    /**
+     * @notice Admin function to set the PBX token. Can be set only once.
+     * @param newPBXTokenAddress new PBX token address
+     */
     function _setPBXToken(address newPBXTokenAddress) external {
         onlyAdmin();
         require(newPBXTokenAddress != address(0), "invalid argument");
@@ -326,8 +366,7 @@ contract ComptrollerPart1 is ComptrollerPart1Interface, ComptrollerCommonImpl {
         PBXToken = newPBXTokenAddress;
     }
 
-    /*** Policy Hooks ***/
-    /*** Those function should not be marked as pure, view ***/
+    /*** Policy Hooks, should not be marked as pure, view ***/
 
     /**
      * @notice Validates mint and reverts on rejection. May emit logs. Now empty, reserved for potential future use.

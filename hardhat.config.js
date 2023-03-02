@@ -1,13 +1,6 @@
-require("@nomiclabs/hardhat-waffle")
-require("@openzeppelin/hardhat-upgrades")
+require('@nomicfoundation/hardhat-toolbox')
 require('hardhat-contract-sizer')
-require("hardhat-gas-reporter")
-require("solidity-coverage")
-require('hardhat-abi-exporter')
 
-/**
- * @type import('hardhat/config').HardhatUserConfig
- */
 module.exports = {
     solidity: {
         compilers: [

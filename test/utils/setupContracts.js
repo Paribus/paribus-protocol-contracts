@@ -133,7 +133,7 @@ const setupPlatformContracts = async function () {
     await setComptrollerImpl(unitroller.address, comptrollerPart1, comptrollerPart2)
 
     unitroller = await ethers.getContractAt("ComptrollerInterface", unitroller.address) // abi fix
-    return {oracle, unitroller, jrmStableCoin, jrmEth, jrmWbtc, jrmPbx}
+    return {oracle, unitroller, jrmStableCoin, jrmEth, jrmWbtc, jrmPbx, comptrollerPart1, comptrollerPart2}
 }
 
 const setupMaximillion = async function (pEtherAddress) {

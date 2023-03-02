@@ -34,7 +34,7 @@ contract PToken is PTokenInterface, ExponentialNoError, TokenErrorReporter {
 
         // Set initial exchange rate
         initialExchangeRateMantissa = initialExchangeRateMantissa_;
-        require(initialExchangeRateMantissa > 0, "initial exchange rate must be greater than zero.");
+        require(initialExchangeRateMantissa > 0, "initial exchange rate must be greater than zero");
 
         // Set the comptroller
         uint err = _setComptroller(comptroller_);
@@ -177,6 +177,11 @@ contract PToken is PTokenInterface, ExponentialNoError, TokenErrorReporter {
         return mul_ScalarTruncate(exchangeRate, accountTokens[owner]);
     }
 
+    /**
+     * @notice Get the underlying balance of the `owner` based on stored data
+     * @param owner The address of the account to query
+     * @return The amount of underlying owned by `owner`, with no interest accrued
+     */
     function balanceOfUnderlyingStored(address owner) external view returns (uint) {
         Exp memory exchangeRate = Exp({mantissa: exchangeRateStored()});
         return mul_ScalarTruncate(exchangeRate, accountTokens[owner]);
@@ -837,7 +842,7 @@ contract PToken is PTokenInterface, ExponentialNoError, TokenErrorReporter {
      * @return (uint, uint) An error code (0=success, otherwise a failure, see ErrorReporter.sol), and the actual repayment amount.
      */
     function liquidateBorrowInternal(address borrower, uint repayAmount, PTokenInterface pTokenCollateral) internal nonReentrant returns (uint, uint) {
-        pTokenCollateral.isPToken();
+        require(pTokenCollateral.isPToken(), "incorrect asset");
 
         uint error = accrueInterest();
         if (error != uint(Error.NO_ERROR)) {
@@ -1026,10 +1031,7 @@ contract PToken is PTokenInterface, ExponentialNoError, TokenErrorReporter {
       * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
       */
     function _setPendingAdmin(address payable newPendingAdmin) external returns (uint) {
-        // Check caller = admin
-        if (msg.sender != admin) {
-            return fail(Error.UNAUTHORIZED, FailureInfo.SET_PENDING_ADMIN_OWNER_CHECK);
-        }
+        onlyAdmin();
 
         // Save current value, if any, for inclusion in log
         address oldPendingAdmin = pendingAdmin;
@@ -1049,10 +1051,7 @@ contract PToken is PTokenInterface, ExponentialNoError, TokenErrorReporter {
       * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
       */
     function _acceptAdmin() external returns (uint) {
-        // Check caller is pendingAdmin and pendingAdmin ≠ address(0)
-        if (msg.sender != pendingAdmin || msg.sender == address(0)) {
-            return fail(Error.UNAUTHORIZED, FailureInfo.ACCEPT_ADMIN_PENDING_ADMIN_CHECK);
-        }
+        require(msg.sender == pendingAdmin, 'only pending admin');
 
         // Save current values for inclusion in log
         address oldAdmin = admin;
@@ -1076,14 +1075,10 @@ contract PToken is PTokenInterface, ExponentialNoError, TokenErrorReporter {
       * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
       */
     function _setComptroller(ComptrollerInterface newComptroller) public returns (uint) {
-        // Check caller is admin
-        if (msg.sender != admin) {
-            return fail(Error.UNAUTHORIZED, FailureInfo.SET_COMPTROLLER_OWNER_CHECK);
-        }
+        onlyAdmin();
 
         ComptrollerInterface oldComptroller = comptroller;
-        // Ensure invoke comptroller.isComptroller() returns true
-        require(newComptroller.isComptroller(), "marker method returned false");
+        require(newComptroller.isComptroller(), "incorrect comptroller");
 
         // Set market's comptroller to newComptroller
         comptroller = newComptroller;
@@ -1115,10 +1110,7 @@ contract PToken is PTokenInterface, ExponentialNoError, TokenErrorReporter {
       * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
       */
     function _setReserveFactorFresh(uint newReserveFactorMantissa) internal returns (uint) {
-        // Check caller is admin
-        if (msg.sender != admin) {
-            return fail(Error.UNAUTHORIZED, FailureInfo.SET_RESERVE_FACTOR_ADMIN_CHECK);
-        }
+        onlyAdmin();
 
         // Verify market's block number equals current block number
         if (accrualBlockNumber != getBlockNumber()) {
@@ -1222,13 +1214,7 @@ contract PToken is PTokenInterface, ExponentialNoError, TokenErrorReporter {
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
     function _reduceReservesFresh(uint reduceAmount) internal returns (uint) {
-        // totalReserves - reduceAmount
-        uint totalReservesNew;
-
-        // Check caller is admin
-        if (msg.sender != admin) {
-            return fail(Error.UNAUTHORIZED, FailureInfo.REDUCE_RESERVES_ADMIN_CHECK);
-        }
+        onlyAdmin();
 
         // We fail gracefully unless market's block number equals current block number
         if (accrualBlockNumber != getBlockNumber()) {
@@ -1249,7 +1235,8 @@ contract PToken is PTokenInterface, ExponentialNoError, TokenErrorReporter {
         // EFFECTS & INTERACTIONS
         // (No safe failures beyond this point)
 
-        totalReservesNew = totalReserves - reduceAmount;
+        // totalReserves - reduceAmount
+        uint totalReservesNew = totalReserves - reduceAmount;
         // We checked reduceAmount <= totalReserves above, so this should never revert.
         require(totalReservesNew <= totalReserves, "reduce reserves unexpected underflow");
 
@@ -1287,14 +1274,7 @@ contract PToken is PTokenInterface, ExponentialNoError, TokenErrorReporter {
      * @return uint 0=success, otherwise a failure (see ErrorReporter.sol for details)
      */
     function _setInterestRateModelFresh(InterestRateModelInterface newInterestRateModel) internal returns (uint) {
-
-        // Used to store old model for use in the event that is emitted on success
-        InterestRateModelInterface oldInterestRateModel;
-
-        // Check caller is admin
-        if (msg.sender != admin) {
-            return fail(Error.UNAUTHORIZED, FailureInfo.SET_INTEREST_RATE_MODEL_OWNER_CHECK);
-        }
+        onlyAdmin();
 
         // We fail gracefully unless market's block number equals current block number
         if (accrualBlockNumber != getBlockNumber()) {
@@ -1302,10 +1282,9 @@ contract PToken is PTokenInterface, ExponentialNoError, TokenErrorReporter {
         }
 
         // Track the market's current interest rate model
-        oldInterestRateModel = interestRateModel;
+        InterestRateModelInterface oldInterestRateModel = interestRateModel;
 
-        // Ensure invoke newInterestRateModel.isInterestRateModel() returns true
-        require(newInterestRateModel.isInterestRateModel(), "marker method returned false");
+        require(newInterestRateModel.isInterestRateModel(), "incorrect interest rate model");
 
         // Set the interest rate model to newInterestRateModel
         interestRateModel = newInterestRateModel;
@@ -1348,5 +1327,12 @@ contract PToken is PTokenInterface, ExponentialNoError, TokenErrorReporter {
         _notEntered = false;
         _;
         _notEntered = true; // get a gas-refund post-Istanbul
+    }
+
+    /**
+     * @notice Checks caller is admin
+     */
+    function onlyAdmin() internal view {
+        require(msg.sender == admin, "only admin");
     }
 }

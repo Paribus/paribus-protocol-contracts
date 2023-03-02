@@ -38,7 +38,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
      */
     function exitMarket(address pTokenAddress) external returns (uint) {
         PToken pToken = PToken(pTokenAddress);
-        pToken.isPToken();
+        require(pToken.isPToken(), "incorrect asset");
 
         /* Get sender tokensHeld and amountOwed underlying from the pToken */
         (uint tokensHeld, uint borrowBalance, ) = pToken.getAccountSnapshot(msg.sender);
@@ -96,7 +96,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
      * @return Success indicator for whether the market was entered
      */
     function addToMarketInternal(PToken pToken, address borrower) internal returns (Error) {
-        pToken.isPToken();
+        require(pToken.isPToken(), "incorrect asset");
         Market storage marketToJoin = markets[address(pToken)];
 
         if (!marketToJoin.isListed) { // market is not listed, cannot join
@@ -160,7 +160,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
         Error err = getHypotheticalAccountLiquidityInternalImpl(account, address(0), 0, 0, vars);
         require(err == Error.NO_ERROR, "getHypotheticalAccountLiquidity error");
 
-        return (sub_(vars.sumCollateral, 0), 0, vars.sumBorrowPlusEffects);
+        return (vars.sumCollateral, 0, vars.sumBorrowPlusEffects);
     }
 
     /**
@@ -237,8 +237,6 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
 
             // Calculate effects of interacting with pTokenModify
             if (address(asset) == pTokenModify) {
-                PToken(pTokenModify).isPToken();
-
                 // redeem effect
                 // sumBorrowPlusEffects += tokensToDenom * redeemTokens
                 vars.sumBorrowPlusEffects = mul_ScalarTruncateAddUInt(vars.tokensToDenom, redeemTokens, vars.sumBorrowPlusEffects);
@@ -261,8 +259,8 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
      * @return (errorCode, number of pTokenCollateral tokens to be seized in a liquidation)
      */
     function liquidateCalculateSeizeTokens(address pTokenBorrowed, address pTokenCollateral, uint actualRepayAmount) external view returns (uint, uint) {
-        PToken(pTokenBorrowed).isPToken();
-        PToken(pTokenCollateral).isPToken();
+        require(PToken(pTokenBorrowed).isPToken(), "incorrect asset");
+        require(PToken(pTokenCollateral).isPToken(), "incorrect asset");
 
         /* Read oracle prices for borrowed and collateral markets */
         uint priceBorrowedMantissa = oracle.getUnderlyingPrice(PToken(pTokenBorrowed));
@@ -287,7 +285,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
         return (uint(Error.NO_ERROR), seizeTokens);
     }
 
-    /*** Policy Hooks ***/
+    /*** Policy Hooks, should not be marked as pure, view ***/
 
     /**
      * @notice Checks if the liquidation should be allowed to occur
@@ -298,7 +296,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
      * @param repayAmount The amount of underlying being repaid
      */
     function liquidateBorrowAllowed(address pTokenBorrowed, address pTokenCollateral, address liquidator, address borrower, uint repayAmount) external returns (uint) {
-        PToken(pTokenBorrowed).isPToken();
+        require(PToken(pTokenBorrowed).isPToken(), "incorrect asset");
 
         liquidator; // Shh - currently unused
 
@@ -333,7 +331,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
      * @return 0 if the redeem is allowed, otherwise a semi-opaque error code (See ErrorReporter.sol)
      */
     function redeemAllowed(address pToken, address redeemer, uint redeemTokens) external returns (uint) {
-        PToken(pToken).isPToken();
+        require(PToken(pToken).isPToken(), "incorrect asset");
 
         uint allowed = redeemAllowedInternal(pToken, redeemer, redeemTokens);
         if (allowed != uint(Error.NO_ERROR)) {
@@ -347,22 +345,6 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
         return uint(Error.NO_ERROR);
     }
 
-    function hasAnyBorrow(address account) internal view returns (bool) {
-        // For each asset the account is in
-        PToken[] memory assets = accountAssets[account];
-
-        for (uint i = 0; i < assets.length; i++) {
-            // Read the borrow balance from the pToken
-            (, uint borrowBalance, ) = assets[i].getAccountSnapshot(account);
-
-            if (borrowBalance > 0) {
-                return true;
-            }
-        }
-
-        return false;
-    }
-
     /**
      * @notice Checks if the account should be allowed to borrow the underlying asset of the given market
      * @param pToken The market to verify the borrow against
@@ -371,7 +353,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
      * @return 0 if the borrow is allowed, otherwise a semi-opaque error code (See ErrorReporter.sol)
      */
     function borrowAllowed(address pToken, address borrower, uint borrowAmount) external returns (uint) {
-        PToken(pToken).isPToken();
+        require(PToken(pToken).isPToken(), "incorrect asset");
 
         // Pausing is a very serious situation - we revert to sound the alarms
         require(!borrowGuardianPaused[pToken] && !borrowGuardianPausedGlobal, "borrow is paused");
@@ -432,7 +414,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
      * @return 0 if the transfer is allowed, otherwise a semi-opaque error code (See ErrorReporter.sol)
      */
     function transferAllowed(address pToken, address src, address dst, uint transferTokens) external returns (uint) {
-        PToken(pToken).isPToken();
+        require(PToken(pToken).isPToken(), "incorrect asset");
 
         // Pausing is a very serious situation - we revert to sound the alarms
         require(!transferGuardianPausedGlobal, "transfer is paused");
@@ -460,7 +442,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
      * @return 0 if the mint is allowed, otherwise a semi-opaque error code (See ErrorReporter.sol)
      */
     function mintAllowed(address pToken, address minter, uint mintAmount) external returns (uint) {
-        PToken(pToken).isPToken();
+        require(PToken(pToken).isPToken(), "incorrect asset");
 
         // Pausing is a very serious situation - we revert to sound the alarms
         require(!mintGuardianPaused[pToken] && !mintGuardianPausedGlobal, "mint is paused");
@@ -489,7 +471,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
      * @return 0 if the repay is allowed, otherwise a semi-opaque error code (See ErrorReporter.sol)
      */
     function repayBorrowAllowed(address pToken, address payer, address borrower, uint repayAmount) external returns (uint) {
-        PToken(pToken).isPToken();
+        require(PToken(pToken).isPToken(), "incorrect asset");
 
         // Shh - currently unused
         payer;
@@ -517,8 +499,8 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
      * @param seizeTokens The number of collateral tokens to seize
      */
     function seizeAllowed(address pTokenCollateral, address pTokenBorrowed, address liquidator, address borrower, uint seizeTokens) external returns (uint) {
-        PToken(pTokenCollateral).isPToken();
-        PToken(pTokenBorrowed).isPToken();
+        require(PToken(pTokenCollateral).isPToken(), "incorrect asset");
+        require(PToken(pTokenBorrowed).isPToken(), "incorrect asset");
 
         // Pausing is a very serious situation - we revert to sound the alarms
         require(!seizeGuardianPausedGlobal, "seize is paused");
@@ -541,8 +523,15 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
         return uint(Error.NO_ERROR);
     }
 
+    /**
+     * @notice Checks if the account should be allowed to redeem tokens in the given market. Integral part of the redeemAllowed() function.
+     * @param pToken The market to verify the redeem against=
+     * @param redeemer The account which would redeem the tokens
+     * @param redeemTokens The number of pTokens to exchange for the underlying asset in the market
+     * @return 0 if the redeem is allowed, otherwise a semi-opaque error code (See ErrorReporter.sol)
+     */
     function redeemAllowedInternal(address pToken, address redeemer, uint redeemTokens) internal view returns (uint) {
-        PToken(pToken).isPToken();
+        require(PToken(pToken).isPToken(), "incorrect asset");
 
         if (!markets[pToken].isListed) {
             return uint(Error.MARKET_NOT_LISTED);
@@ -587,7 +576,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
     * @param holder The address to claim PBX for
     */
     function claimPBXReward(address holder) external {
-        return claimPBX(holder, allMarkets);
+        return claimPBXSingle(holder, allMarkets);
     }
 
     /**
@@ -595,7 +584,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
      * @param holder The address to claim PBX for
      * @param pTokens The list of markets to claim PBX in
      */
-    function claimPBX(address holder, PToken[] memory pTokens) public {
+    function claimPBXSingle(address holder, PToken[] memory pTokens) public {
         address[] memory holders = new address[](1);
         holders[0] = holder;
         claimPBX(holders, pTokens, true, true);
@@ -611,7 +600,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
     function claimPBX(address[] memory holders, PToken[] memory pTokens, bool borrowers, bool suppliers) public {
         for (uint i = 0; i < pTokens.length; i++) {
             PToken pToken = pTokens[i];
-            pToken.isPToken();
+            require(pToken.isPToken(), "incorrect asset");
 
             require(markets[address(pToken)].isListed, "market must be listed");
             if (borrowers) {
@@ -710,7 +699,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
         adminOrInitializing();
 
         uint numTokens = pTokens.length;
-        require(numTokens == supplySpeeds.length && numTokens == borrowSpeeds.length, "_setPBXSpeeds invalid input");
+        require(numTokens == supplySpeeds.length && numTokens == borrowSpeeds.length, "invalid argument");
 
         for (uint i = 0; i < numTokens; ++i) {
             setPBXSpeedInternal(pTokens[i], supplySpeeds[i], borrowSpeeds[i]);
@@ -800,7 +789,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
      * @dev Index is a cumulative sum of the PBX per pToken accrued.
      */
     function updatePBXBorrowIndex(address pToken, Exp memory marketBorrowIndex) internal {
-        PToken(pToken).isPToken();
+        require(PToken(pToken).isPToken(), "incorrect asset");
 
         PBXMarketState storage borrowState = PBXBorrowState[pToken];
         uint borrowSpeed = PBXBorrowSpeeds[pToken];
@@ -808,8 +797,8 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
         uint deltaBlocks = sub_(uint(blockNumber), uint(borrowState.block));
         if (deltaBlocks > 0 && borrowSpeed > 0) {
             uint borrowAmount = div_(PToken(pToken).totalBorrows(), marketBorrowIndex);
-            uint PBXAccrued = mul_(deltaBlocks, borrowSpeed);
-            Double memory ratio = borrowAmount > 0 ? fraction(PBXAccrued, borrowAmount) : Double({mantissa: 0});
+            uint newPBXAccrued = mul_(deltaBlocks, borrowSpeed);
+            Double memory ratio = borrowAmount > 0 ? fraction(newPBXAccrued, borrowAmount) : Double({mantissa: 0});
             borrowState.index = safe224(add_(Double({mantissa: borrowState.index}), ratio).mantissa, "new index exceeds 224 bits");
             borrowState.block = blockNumber;
         } else if (deltaBlocks > 0) {
@@ -824,7 +813,7 @@ contract ComptrollerPart2 is ComptrollerPart2Interface, ComptrollerCommonImpl {
      * @param borrower The address of the borrower to distribute PBX to
      */
     function distributeBorrowerPBX(address pToken, address borrower, Exp memory marketBorrowIndex) internal {
-        PToken(pToken).isPToken();
+        require(PToken(pToken).isPToken(), "incorrect asset");
 
         PBXMarketState storage borrowState = PBXBorrowState[pToken];
         uint borrowIndex = borrowState.index;

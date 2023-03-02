@@ -1,6 +1,4 @@
-const hre = require("hardhat")
-const ethers = hre.ethers
-const assert = require("assert")
+const {ethers} = require('hardhat')
 const {expectEvent} = require("./expectAddons")
 const {create, all} = require('mathjs')
 const mathjs = create(all, {})

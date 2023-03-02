@@ -20,9 +20,12 @@ contract SimplePriceOracle is StablecoinsPriceOracle, Ownable {
         return (keccak256(abi.encodePacked((a))) == keccak256(abi.encodePacked((b))));
     }
 
-    // underlyingPriceMantissa decimals: 36 - underlying decimals
+    /**
+      * @notice Admin function to set the new price for a given pToken
+      * @param pToken The token
+      * @param underlyingPriceMantissa The new price. Expected decimals: 36 - underlying decimals
+      */
     function setUnderlyingPrice(PToken pToken, uint underlyingPriceMantissa) public onlyOwner {
-        assert(pToken.isPToken());
         (uint underlyingDecimals, address underlyingAddress) = getUnderlyingDecimalsAndAddress(pToken);
         stablecoinsPrices[underlyingAddress] = adjustDecimals(SafeMath.sub(36, underlyingDecimals), 18, underlyingPriceMantissa);
     }

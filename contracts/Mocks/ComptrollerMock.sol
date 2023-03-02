@@ -29,6 +29,23 @@ contract AllowingComptrollerMock is ComptrollerMockBase { // Comptroller with no
     function liquidateBorrowAllowed(address, address, address, address, uint) external returns (uint) { return uint(Error.NO_ERROR); }
 }
 
+contract DenyingComptrollerMock is ComptrollerMockBase {
+    function mintAllowed(address, address, uint) external returns (uint) { return uint(Error.REJECTION); }
+    function mintVerify(address, address, uint, uint) external { }
+    function redeemVerify(address, address, uint, uint) external { }
+    function borrowVerify(address, address, uint) external { }
+    function transferVerify(address, address, address, uint) external { }
+    function redeemAllowed(address, address, uint) external returns (uint) { return uint(Error.REJECTION); }
+    function borrowAllowed(address, address, uint) external returns (uint) { return uint(Error.REJECTION); }
+    function transferAllowed(address, address, address, uint) external returns (uint) { return uint(Error.REJECTION); }
+    function repayBorrowAllowed(address, address, address, uint) external returns (uint) { return uint(Error.REJECTION); }
+    function repayBorrowVerify(address, address, address, uint, uint) external { }
+    function liquidateBorrowVerify(address, address, address, address, uint, uint) external { }
+    function seizeAllowed(address, address, address, address, uint) external returns (uint) { return uint(Error.REJECTION); }
+    function seizeVerify(address, address, address, address, uint) external { }
+    function liquidateBorrowAllowed(address, address, address, address, uint) external returns (uint) { return uint(Error.REJECTION); }
+}
+
 contract ComptrollerStorageV2Mock is ComptrollerStorage {
     int foo;
     int bar;

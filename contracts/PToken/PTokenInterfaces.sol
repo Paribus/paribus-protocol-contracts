@@ -29,7 +29,6 @@ contract PTokenStorage {
     /**
      * @notice Maximum borrow rate that can ever be applied (.0005% / block)
      */
-
     uint internal constant borrowRateMaxMantissa = 0.0005e16;
 
     /**
@@ -166,6 +165,21 @@ contract PTokenInterface is PTokenStorage {
      */
     event LiquidateBorrow(address indexed liquidator, address indexed borrower, uint repayAmount, address indexed pTokenCollateral, uint seizeTokens);
 
+    /**
+     * @notice EIP20 Transfer event
+     */
+    event Transfer(address indexed from, address indexed to, uint amount);
+
+    /**
+     * @notice EIP20 Approval event
+     */
+    event Approval(address indexed owner, address indexed spender, uint amount);
+
+    /**
+     * @notice Failure event
+     */
+    event Failure(uint error, uint info, uint detail);
+
     /*** Admin Events ***/
 
     /**
@@ -202,21 +216,6 @@ contract PTokenInterface is PTokenStorage {
      * @notice Event emitted when the reserves are reduced
      */
     event ReservesReduced(address indexed admin, uint reduceAmount, uint newTotalReserves);
-
-    /**
-     * @notice EIP20 Transfer event
-     */
-    event Transfer(address indexed from, address indexed to, uint amount);
-
-    /**
-     * @notice EIP20 Approval event
-     */
-    event Approval(address indexed owner, address indexed spender, uint amount);
-
-    /**
-     * @notice Failure event
-     */
-    event Failure(uint error, uint info, uint detail);
 
     /*** User Interface ***/
 

@@ -6,7 +6,8 @@ import "@chainlink/contracts/src/v0.5/interfaces/FlagsInterface.sol";
 import "./StablecoinsPriceOracle.sol";
 
 contract ChainlinkPriceOracle is StablecoinsPriceOracle {
-    mapping(address => address) public chainlinkDataFeeds; // underlying address => underlying asset price data feed
+    /// @notice underlying address => underlying asset price data feed
+    mapping(address => address) public chainlinkDataFeeds;
 
     function isTokenSupported(address token) public view returns (bool) {
         return StablecoinsPriceOracle.isTokenSupported(token) || chainlinkDataFeeds[token] != address(0);
@@ -26,13 +27,18 @@ contract ChainlinkPriceOracle is StablecoinsPriceOracle {
         return adjustDecimals(priceFeed.decimals(), decimals, uint(price));
     }
 
+    /**
+      * @return abs(a - b)
+      */
     function subabs(uint a, uint b) internal pure returns (uint) {
-        return a > b ? a - b : b - a; // abs(a - b)
+        return a > b ? a - b : b - a;
     }
 }
 
 contract L2ChainlinkPriceOracle is ChainlinkPriceOracle {
+    /// @notice internal Chainlink flag to indicate that the sequencer is offline
     address internal FLAG_SEQ_OFFLINE;
+
     FlagsInterface internal chainlinkFlags;
 
     function getPriceOfUnderlying(address token, uint decimals) public view returns (uint) {

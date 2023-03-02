@@ -83,8 +83,8 @@ contract PEtherDelegator is PTokenStorage, PTokenDelegatorInterface {
      * @param becomeImplementationData The encoded bytes data to be passed to _becomeImplementation
      */
     function _setImplementation(address implementation_, bool allowResign, bytes memory becomeImplementationData) public {
-        require(msg.sender == admin, "PEtherDelegator::_setImplementation: Caller must be admin");
-        require(PTokenInterface(implementation_).isPToken());
+        require(msg.sender == admin, "only admin");
+        require(PTokenInterface(implementation_).isPToken(), "incorrect asset");
 
         if (allowResign) {
             delegateToImplementation(abi.encodeWithSignature("_resignImplementation()"));

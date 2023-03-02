@@ -79,8 +79,7 @@ contract BaseJumpRateModelV2 {
       * @param newPendingOwner New pending owner.
       */
     function _setPendingAdmin(address newPendingOwner) external {
-        // Check caller = owner
-        require(msg.sender == owner, "Error.UNAUTHORIZED FailureInfo.SET_PENDING_ADMIN_OWNER_CHECK");
+        require(msg.sender == owner, "only admin");
 
         // Save current value, if any, for inclusion in log
         address oldPendingOwner = pendingOwner;
@@ -97,8 +96,7 @@ contract BaseJumpRateModelV2 {
       * @dev Admin function for pending owner to accept role and update owner
       */
     function _acceptAdmin() external {
-        // Check caller is pendingOwner and pendingOwner ≠ address(0)
-        require(msg.sender == pendingOwner && msg.sender != address(0), "Error.UNAUTHORIZED FailureInfo.ACCEPT_ADMIN_PENDING_ADMIN_CHECK");
+        require(msg.sender == pendingOwner, "only pending admin");
 
         // Save current values for inclusion in log
         address oldOwner = owner;
@@ -122,7 +120,7 @@ contract BaseJumpRateModelV2 {
      * @param kink_ The utilization point at which the jump multiplier is applied
      */
     function updateJumpRateModel(uint baseRatePerYear, uint multiplierPerYear, uint jumpMultiplierPerYear, uint kink_) external {
-        require(msg.sender == owner, "only the owner may call this function.");
+        require(msg.sender == owner, "only admin");
 
         updateJumpRateModelInternal(baseRatePerYear, multiplierPerYear, jumpMultiplierPerYear, kink_);
     }

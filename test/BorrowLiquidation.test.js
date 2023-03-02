@@ -1,4 +1,4 @@
-const {tokens, mintAndDepositToken} = require('./utils/testHelpers')
+const {tokens, mintAndDepositToken, REPAY_MAX} = require('./utils/testHelpers')
 const setupAll = require('./utils/setupAllMocked')
 const {expectEventInReceipt, expectFractionalAmount, expectEvent} = require('./utils/expectAddons')
 const {expect} = require("chai")
@@ -41,6 +41,8 @@ describe("Borrow liquidation logic", () => {
         const repayAmount = tokens('1500')
         await app.pbx.mint(app.owner.address, repayAmount)
         await app.pbx.approve(app.ppbx.address, repayAmount)
+        await expectEvent(app.ppbx.liquidateBorrow(app.user2.address, 0, app.pdai.address), 'Failure', { error: 7 })
+        await expectEvent(app.ppbx.connect(app.user2).liquidateBorrow(app.user2.address, 1, app.pdai.address), 'Failure', { error: 6 })
         await expectEvent(app.ppbx.liquidateBorrow(app.user2.address, repayAmount, app.pdai.address), 'LiquidateBorrow', { liquidator: app.owner.address, borrower: app.user2.address, repayAmount: repayAmount })
 
         // expect user 2 liquidity to be positive now

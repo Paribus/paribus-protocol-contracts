@@ -4,7 +4,8 @@ pragma solidity 0.5.17;
 import "./PriceOracleCommonImpl.sol";
 
 contract StablecoinsPriceOracle is PriceOracleCommonImpl {
-    mapping(address => uint256) public stablecoinsPrices; // underlying stablecoin address => fixed stablecoin price, 18 decimals
+    /// @notice underlying stablecoin address => fixed stablecoin price, 18 decimals
+    mapping(address => uint256) public stablecoinsPrices;
 
     function getPriceOfUnderlying(address token, uint decimals) public view returns (uint) {
         require(isTokenSupported(token), "TOKEN_NOT_SUPPORTED");

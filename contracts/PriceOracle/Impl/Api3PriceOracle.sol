@@ -5,7 +5,9 @@ import "../../Interfaces/Api3Interfaces.sol";
 import "./StablecoinsPriceOracle.sol";
 
 contract Api3PriceOracle is StablecoinsPriceOracle {
-    mapping(address => bytes32) public api3DataFeedNames; // underlying address => data feed name
+    /// @notice underlying address => data feed name
+    mapping(address => bytes32) public api3DataFeedNames;
+
     address public api3DapiServer;
 
     function isTokenSupported(address token) public view returns (bool) {
@@ -17,7 +19,7 @@ contract Api3PriceOracle is StablecoinsPriceOracle {
         if (StablecoinsPriceOracle.isTokenSupported(token)) return StablecoinsPriceOracle.getPriceOfUnderlying(token, decimals);
 
         (int price, /* uint timestamp */) = Api3IDapiServer(api3DapiServer).readDataFeedWithDapiName(api3DataFeedNames[token]);
-        assert(price >= 0);
+        require(price >= 0, "invalid price");
         return adjustDecimals(18, decimals, uint(price));
     }
 }

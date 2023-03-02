@@ -43,14 +43,14 @@ contract Unitroller is UnitrollerAdminStorage {
 
     /*** Admin Functions ***/
     function _setPendingImplementations(address newPendingPart1Implementation, address newPendingPart2Implementation) external {
-        require(newPendingPart1Implementation != address(0) && newPendingPart2Implementation != address(0));
-        require(msg.sender == admin, "Error.UNAUTHORIZED: FailureInfo.SET_PENDING_IMPLEMENTATION_OWNER_CHECK");
+        require(newPendingPart1Implementation != address(0) && newPendingPart2Implementation != address(0), "invalid argument");
+        require(msg.sender == admin, "only admin");
 
         {
             ComptrollerInterface part1 = ComptrollerInterface(newPendingPart1Implementation);
             ComptrollerInterface part2 = ComptrollerInterface(newPendingPart2Implementation);
-            require(part1.isComptrollerPart1() && !part1.isComptroller());
-            require(part2.isComptrollerPart2() && !part2.isComptroller());
+            require(part1.isComptrollerPart1() && !part1.isComptroller(), "marker methods returned invalid values");
+            require(part2.isComptrollerPart2() && !part2.isComptroller(), "marker methods returned invalid values");
         }
 
         _setPendingImplementationsInternal(newPendingPart1Implementation, newPendingPart2Implementation);
@@ -90,7 +90,7 @@ contract Unitroller is UnitrollerAdminStorage {
       * @param newPendingAdmin New pending admin.
       */
     function _setPendingAdmin(address newPendingAdmin) external {
-        require(msg.sender == admin, "Error.UNAUTHORIZED: FailureInfo.SET_PENDING_ADMIN_OWNER_CHECK");
+        require(msg.sender == admin, "only admin");
 
         emit NewPendingAdmin(pendingAdmin, newPendingAdmin);
         pendingAdmin = newPendingAdmin;
@@ -101,7 +101,7 @@ contract Unitroller is UnitrollerAdminStorage {
       * @dev Admin function for pending admin to accept role and update admin
       */
     function _acceptAdmin() external {
-        require(msg.sender == pendingAdmin && msg.sender != address(0), "Error.UNAUTHORIZED: FailureInfo.ACCEPT_ADMIN_PENDING_ADMIN_CHECK");
+        require(msg.sender == pendingAdmin, "only pending admin");
 
         emit NewAdmin(admin, pendingAdmin);
         emit NewPendingAdmin(pendingAdmin, address(0));

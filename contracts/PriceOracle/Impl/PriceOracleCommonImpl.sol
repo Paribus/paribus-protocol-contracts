@@ -10,8 +10,14 @@ contract PriceOracleCommonImpl is PriceOracleInterface {
     using SafeMath for uint8;
     using SafeMath for int;
 
+    /// @notice The address of pEther. We need this because pEther has no .underlying() property for obvious reason
     address public pEtherAddress;
 
+    /**
+      * @notice Get the decimals and address of a given pToken's underlying asset
+      * @param pToken The token
+      * @return (decimals of underlying, address of underlying (address(0) for pEther))
+      */
     function getUnderlyingDecimalsAndAddress(PToken pToken) public view returns (uint256, address) {
         if (address(pToken) == pEtherAddress) return (18, address(0));
 

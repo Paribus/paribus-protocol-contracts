@@ -136,7 +136,7 @@ contract ComptrollerPart2Interface is ComptrollerCommonInterface {
 
     function updateContributorRewards(address contributor) public;
     function claimPBXReward(address holder) external;
-    function claimPBX(address holder, PToken[] memory pTokens) public;
+    function claimPBXSingle(address holder, PToken[] memory pTokens) public;
     function claimPBX(address[] memory holders, PToken[] memory pTokens, bool borrowers, bool suppliers) public;
 
     /*** PBX Distribution Admin ***/
